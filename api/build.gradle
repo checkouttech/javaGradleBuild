@@ -1,0 +1,178 @@
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+mainClassName = "org.gradle.sample.Main"
+
+
+Logger slf4jLogger = LoggerFactory.getLogger('some-logger')
+slf4jLogger.info('An info log message logged using SLF4j')
+
+/*
+dependencies {
+   testCompile 'org.testng:testng:6.8', 'junit:junit:[4,)'
+   compile 'log4j:log4j:1.2.17'
+}
+*/
+
+sourceSets {
+    main {
+        java {       srcDir 'src/main/java/'      }
+        resources {  srcDir 'src/main/resources'  }
+    }
+
+   test {
+        java {       srcDir 'src/test/java/'      }        
+        resources {  srcDir 'src/test/resources'  }
+    }
+}
+
+test {
+
+    systemProperties 'property': 'value'
+
+    // explicitly include or exclude tests
+    include 'src/test/java/**'
+
+    useTestNG{
+        useDefaultListeners = true
+    }
+
+    jacoco {
+        append = false
+        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
+        classDumpFile = file("$buildDir/jacoco/classpathdumps")
+    }
+    finalizedBy jacocoTestReport 
+}
+
+jacoco {
+
+}
+
+
+
+jacocoTestReport {
+       dependsOn test
+
+       group = "Reporting"
+       description = "Generate Jacoco coverage reports after running tests."
+
+       sourceDirectories = files(sourceSets.main.allSource.srcDirs)
+       classDirectories = files(sourceSets.main.output.classesDir)
+
+       //additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+       //additionalClassDirs = files("build/jacoco/classpathdumps/src/main/java/")
+
+       //executionData = files("build/jacoco/testDebug.exec")
+       
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.enabled true
+        html.destination "${buildDir}/jacocoHtml"
+        sourceSets sourceSets.main
+   }
+}
+
+
+
+jar {
+    baseName = 'smith'
+    version = '1.0'
+    manifest {
+              attributes 'Main-Class': 'src.main.java.HelloWorld '}
+    //   finalizedBy buildRpm
+}
+
+
+
+
+
+ospackage {
+    packageName = 'javaExample'
+    version = '1.2.3'
+    release = '1'
+    arch = I386
+    os = LINUX
+
+    directory('/opt/javaExample')
+
+    // scripts to run on various tasks 
+    installUtils file('scripts/rpm/utils.sh')
+    preInstall file('scripts/rpm/preInstall.sh')
+    postInstall file('scripts/rpm/postInstall.sh')
+    preUninstall 'touch /tmp/myfile'
+    postUninstall file('scripts/rpm/postUninstall.sh')
+
+    into '/opt/javaExample'
+
+    from(jar.outputs.files) {
+        into 'lib'
+    }
+    from(configurations.runtime) {
+        into 'lib'
+    }
+    from('lib') {
+        into 'lib'
+    }
+    from('scripts') {
+        into 'bin'
+        exclude 'database'
+        fileMode = 0550
+    }
+    from('src/main/resources') {
+        fileType CONFIG | NOREPLACE
+        into 'conf'
+    }
+    from('home') {
+        // Creating directory entries (or not) in the RPM is normally left up to redline-rpm library.
+        // Use this to explicitly create an entry -- for setting directory fileMode on system directories.
+        createDirectoryEntry = true
+        fileMode = 0500
+        into 'home'
+    }
+    from('endorsed') {
+        // Will tell redline-rpm not to auto create directories, which
+        // is sometimes necessary to avoid rpm directory conflicts
+        addParentDirs = false
+        into '/usr/share/tomcat/endorsed'
+    }
+}
+
+
+
+
+// buildRpm and buildDeb are implicitly created, but can still be configured if needed
+
+buildRpm {
+   println 'task buildRPM : Building RPM'
+   logger.lifecycle('A lifecycle info log message.')
+}
+
+
+
+sonarqube {
+    properties {
+        property "sonar.host.url", "http://192.168.150.21:9000"
+        property "sonar.projectKey", "Java_Example_Build"
+        property "sonar.projectName", "Java :: Simple Project :: Java Example Build"
+        property "sonar.sources", "src/main/java/"
+        property "sonar.tests",  "src/test/java/"
+        property "sonar.language",  "java"
+        property "sonar.java.binaries",  "build/classes"
+        property "sonar.junit.reportsPath",  "build/reports/tests/junitreports/"
+        property "sonar.java.coveragePlugin", "jacoco"
+        property "sonar.java.sourceEncoding", "UTF-8"
+        property "sonar.java.projectVersion", "1.0"
+        property "sonar.jacoco.reportPath", "build/jacoco/jacocoTest.exec"
+    }
+}
+
+
+// Generates an HTML dependency report.
+htmlDependencyReport {
+//    projects = project.allprojects
+}
+
+
+
