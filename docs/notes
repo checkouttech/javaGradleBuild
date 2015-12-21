@@ -1,0 +1,14 @@
+
+
+
+
+
+
+
+
+ /opt/gradle/bin/gradle -b  web/build.gradle   clean buildRpm
+
+
+
+  
+

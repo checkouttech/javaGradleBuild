@@ -1,0 +1,66 @@
+apply plugin: 'java' 
+apply plugin: 'war' 
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  providedCompile 'javax.servlet:servlet-api:2.5'
+  runtime 'javax.servlet:jstl:1.1.2'
+}
+
+
+ospackage {
+    packageName = 'javaWeb'
+    version = '1.2.3'
+    release = '1'
+    arch = I386
+    os = LINUX
+
+    directory('/opt/javaWar')
+
+    // scripts to run on various tasks 
+    //installUtils file('scripts/rpm/utils.sh')
+    //preInstall file('scripts/rpm/preInstall.sh')
+    //postInstall file('scripts/rpm/postInstall.sh')
+    postInstall 'cp /opt/javaWar/lib/web.jar  /usr/local/tomcat9/webapps/'
+    //postUninstall file('scripts/rpm/postUninstall.sh')
+
+    into '/opt/javaWar'
+
+    from(jar.outputs.files) {
+        into 'lib'
+    }
+    from(configurations.runtime) {
+        into 'lib'
+    }
+    from('lib') {
+        into 'lib'
+    }
+    from('src/main/resources') {
+        fileType CONFIG | NOREPLACE
+        into 'conf'
+    }
+    from('home') {
+        // Creating directory entries (or not) in the RPM is normally left up to redline-rpm library.
+        // Use this to explicitly create an entry -- for setting directory fileMode on system directories.
+        createDirectoryEntry = true
+        fileMode = 0500
+        into 'home'
+    }
+    from('endorsed') {
+        // Will tell redline-rpm not to auto create directories, which
+        // is sometimes necessary to avoid rpm directory conflicts
+        addParentDirs = false
+        into '/usr/share/tomcat/endorsed'
+    }
+
+}
+
+buildRpm {
+   println 'task buildRPM : Building RPM'
+   logger.lifecycle('A lifecycle info log message.')
+}
+
+
