@@ -1,5 +1,7 @@
 apply plugin: 'java' 
 apply plugin: 'war' 
+apply plugin: "jetty"
+
 
 repositories {
   mavenCentral()
@@ -9,6 +11,10 @@ dependencies {
   providedCompile 'javax.servlet:servlet-api:2.5'
   runtime 'javax.servlet:jstl:1.1.2'
 }
+
+httpPort = 8081
+stopPort = 9081
+stopKey = "stopKey"
 
 
 ospackage {
@@ -58,6 +64,7 @@ ospackage {
 
 }
 
+// buildRpm and buildDeb are implicitly created, but can still be configured if needed
 buildRpm {
    println 'task buildRPM : Building RPM'
    logger.lifecycle('A lifecycle info log message.')
